@@ -23,9 +23,8 @@ To run a script that was not installed in the Scripts folder, choose File > Scri
 
 To stop a running script, press Esc.
 ## Scripts
-- **Layer Info to CSV:** Export the blending mode, in-points in seconds:frames, seconds, and frames of each selected layer in a composition as a CSV. Helpful when programming disguise timelines from an assembly composition made of many smaller clips.
+- **Layer Info to CSV:** Export various information about the selected layers to a CSV file, including blending mode, in-points, fade-ins and fade-outs. Helpful when programming disguise timelines from an assembly composition made of many smaller clips.
 - **Replace Effects**: Replaces all instances of an effect with another in selected compositions in the project panel. Works with internal match names and basic display names. Generally speaking, you would want to use the [match names](https://ae-scripting.docsforadobe.dev/matchnames/effects/firstparty.html)  of an effect.
 - **Write Selected Effects**: Makes a CSV of the internal match name and display name of an effect. Mostly for debugging effect names.
 
 ### Roadmap
-- Layer Info to CSV: Make this a more interactive script UI that allows you to select different aspects of the layer's information to export.
