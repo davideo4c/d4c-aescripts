@@ -114,7 +114,7 @@ function createUI() {
                 var trackMatteTypeInfo = "";
                 var isTrackMatte = "";
                 if (layer.hasTrackMatte) {
-                trackMatteInfo = layer.trackMatteLayer.name;
+                trackMatteInfo = '"' + layer.trackMatteLayer.name + '"';
                 trackMatteTypeInfo = getTrackMatteType(layer.trackMatteType);
                 }
                 if (layer.isTrackMatte) {
@@ -205,7 +205,7 @@ function exportLayerInfoToCSV(comp) {
     var exportCount = 0;
     for (var i = 0; i < selectedLayers.length; i++) {
       var layer = selectedLayers[i];
-      var layerName = layer.name;
+      var layerName = '"' + layer.name + '"';
       // Exclude Shy and Guides
       if (layer && !layer.shy && !layer.guideLayer) {
         // alert("Found layer " + layerName +", exporting.")     
@@ -214,7 +214,7 @@ function exportLayerInfoToCSV(comp) {
       }
     }
     saveFile.close();
-    dialog.close();
+    // dialog.close();
     alert(exportCount + " layer timings exported to " + saveFile.fsName);
   } else { alert('Could not write CSV. Check that under Settings > Scripting & Expressions, Allow Scripts to Read and Write Files is checked.');}
 }
