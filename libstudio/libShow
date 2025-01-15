@@ -1,0 +1,42 @@
+// Helper Library for accessing JSON configuration
+var libShow = (function () {
+    var config = null;
+
+    // Load JSON configuration from a file
+    function loadConfig(filePath) {
+        var file = File(filePath);
+        if (file.exists) {
+            file.open("r");
+            var content = file.read();
+            file.close();
+            config = JSON.parse(content);
+        } else {
+            throw new Error("Configuration file not found: " + filePath);
+        }
+    }
+
+    // Get a value from the JSON structure using a dot-notated path
+    function getValue(path) {
+        if (!config) {
+            throw new Error("Configuration not loaded. Call loadConfig() first.");
+        }
+
+        var keys = path.split(".");
+        var value = config;
+
+        for (var i = 0; i < keys.length; i++) {
+            if (value[keys[i]] === undefined) {
+                throw new Error("Invalid path: " + path);
+            }
+            value = value[keys[i]];
+        }
+
+        return value;
+    }
+
+    // Public API
+    return {
+        loadConfig: loadConfig,
+        getValue: getValue
+    };
+})();

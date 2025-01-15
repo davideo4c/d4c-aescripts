@@ -9,7 +9,12 @@ function createUI() {
         dialog.orientation = "row"; 
         dialog.alignChildren = ["center","center"]; 
         dialog.spacing = 10; 
-        dialog.margins = 16; 
+        dialog.margins = 16;
+
+    var layerTimings = dialog.add("group", undefined, {name:"layerTimings"});
+        layerTimings.orientation = "column";
+        layerTimings.alignChildren = ["center,center"];
+        layerTimings.spacing = 5; 
 
     // CHECKBOXES
     // ==========

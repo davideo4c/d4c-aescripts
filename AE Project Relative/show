@@ -1,0 +1,21 @@
+{
+    "metadata": {
+        "description": "AFTER EFFECTS PROJECT CONTROL AND RENDERING FRAMEWORK",
+        "version": "0.1"
+    },
+    "showInformation": {
+        "name": "SHOW NAME",
+        "year": "2025",
+        "venue": "BWAY"
+    },
+    "fileSetControls": {
+        "regExSceneSet": "(?<!CH)(?:(?<=^)|(?<=_))(?!_)\\d+(?=-)",
+        "regExSet": "",
+        "regExCh": "-(CH.*?)-",
+        "regExDesc": "-(?!\\d{3}|CH.*?-)(.*?)(?=_Build_|_V|_v|$)"
+    },
+    "renderSettings": {
+        "outputModules": {},
+        "templateSettings": {}
+    }
+}
