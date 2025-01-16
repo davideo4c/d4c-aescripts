@@ -1,4 +1,5 @@
 var exportOptions = [];
+var layerTimingsRelative = false;
 
 // PRIMARY USER INTERFACE
 function createUI() {
@@ -6,15 +7,25 @@ function createUI() {
     // ======
     var dialog = new Window("dialog"); 
         dialog.text = "Export Layer Timings"; 
-        dialog.orientation = "row"; 
+        dialog.orientation = "column"; 
         dialog.alignChildren = ["center","center"]; 
         dialog.spacing = 10; 
         dialog.margins = 16;
 
     var layerTimings = dialog.add("group", undefined, {name:"layerTimings"});
         layerTimings.orientation = "column";
-        layerTimings.alignChildren = ["center,center"];
+        layerTimings.alignChildren = ["center","center"];
         layerTimings.spacing = 5; 
+
+    var layerTimingsText = layerTimings.add('statictext', undefined, undefined, {name:'layerTimingsText'});
+        layerTimingsText.text = "Layer Timings:"
+
+    var compRelativeTiming = layerTimings.add("radiobutton", undefined, undefined, {name:"compRelativeTiming"});
+        compRelativeTiming.text = "Relative to Comp";
+        compRelativeTiming.value = true;
+    
+    var markerRelativeTiming = layerTimings.add("radiobutton", undefined, undefined, {name:"markerRelativeTiming"});
+        markerRelativeTiming.text = "Relative to Closest Previous Comp Marker (Cuing Style)"
 
     // CHECKBOXES
     // ==========
@@ -26,6 +37,9 @@ function createUI() {
 
     var statictext1 = checkboxes.add("statictext", undefined, undefined, {name: "statictext1"}); 
         statictext1.text = "Include:"; 
+
+    var btnCue = checkboxes.add("checkbox", undefined, undefined, {name:'btnCue'});
+        btnCue.text = "Cue (Comp Markers)";
 
     var btnBlendMode = checkboxes.add("checkbox", undefined, undefined, {name: "btnBlendMode"}); 
         btnBlendMode.text = "Blend Mode"; 
@@ -67,7 +81,15 @@ function createUI() {
 
     // Button Functionality
     btnExport.onClick = function() {
+        layerTimingsRelative = compRelativeTiming.value;
       exportOptions = [
+        {
+            info: 'Cue',
+            shoudlExport: btnCue.value,
+            generateInfo: function(layer) {
+                var getClosestCompMarker(layer, layer.inPoint)
+            }
+        }
         { 
             info: 'Blend Mode', 
             shouldExport: btnBlendMode.value, 
@@ -238,6 +260,37 @@ function getTrackMatteType(type) {
     if (trackMattes[name] === type) { return name; }
   }
   return "Unknown"; // Return "Unknown" if the mode is not found - this really should not happen, and if it does, you are far from the light of God.
+}
+
+function getClosestCompMarker(layer, timeMark) {
+    var comp = layer.containingComp;
+    var timePoint = timeMark;
+    var markers = comp.markerProperty;
+    var closestTime = comp.displayStartTime; // Default to start of the comp
+    var closestMarker = null;
+
+    if (markers.numKeys > 0) {
+        var minDelta = Math.abs(timePoint - closestTime);
+
+        for (var i = 1; i <= markers.numKeys; i++) {
+            var markerTime = markers.keyTime(i);
+            if (markerTime <= timePoint) {
+                var delta = Math.abs(timePoint - markerTime);
+
+                if (delta < minDelta) {
+                    minDelta = delta;
+                    closestTime = markerTime;
+                    closestMarker = markers.keyValue(i);
+                }
+            } else if (markerTime > timePoint) {
+                break;
+            }
+        }
+    }
+    return { 
+        closestTime: closestTime,
+        closestMarker: closestMarker
+    };
 }
 
 function main() {
