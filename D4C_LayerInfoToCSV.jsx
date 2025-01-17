@@ -1,5 +1,53 @@
 var exportOptions = [];
 var layerTimingsRelative = false;
+var blendingModes = {
+    "Luminescent Premul": 5245,
+    "Alpha Add": 5244,
+    "Silhouette Luma": 5243,
+    "Silhouette Alpha": 5242,
+    "Stencil Luma": 5241,
+    "Stencil Alpha": 5240,
+    "Luminosity": 5239,
+    "Color": 5238,
+    "Saturation": 5237,
+    "Hue": 5236,
+    "Divide": 5249,
+    "Subtract": 5248,
+    "Exclusion": 5235,
+    "Classic Difference": 5234,
+    "Difference": 5233,
+    "Hard Mix": 5232,
+    "Pin Light": 5231,
+    "Vivid Light": 5230,
+    "Linear Light": 5229,
+    "Hard Light": 5228,
+    "Soft Light": 5227,
+    "Overlay": 5226,
+    "Lighter Color": 5246,
+    "Linear Dodge": 5223,
+    "Classic Color Dodge": 5225,
+    "Color Dodge": 5224,
+    "Screen": 5222,
+    "Lighten": 5221,
+    "Add": 5220,
+    "Darker Color": 5247,
+    "Linear Burn": 5217,
+    "Classic Color Burn": 5219,
+    "Color Burn": 5218,
+    "Multiply": 5216,
+    "Darken": 5215,
+    "Dancing Dissolve": 5214,
+    "Dissolve": 5213,
+    "Normal": 5212
+  };
+  
+  var trackMattes = {
+    "ALPHA": TrackMatteType.ALPHA,
+    "ALPHA INVERT": TrackMatteType.ALPHA_INVERTED,
+    "LUMA": TrackMatteType.LUMA,
+    "LUMA INVERT": TrackMatteType.LUMA_INVERTED
+  };
+  var dialog;
 
 // PRIMARY USER INTERFACE
 function createUI() {
@@ -77,7 +125,7 @@ function createUI() {
         btnExport.text = "Export CSV"; 
 
     var btnCancel = functionBtns.add("button", undefined, undefined, {name: "btnCancel"}); 
-        btnCancel.text = "Cancel"; 
+        btnCancel.text = "Exit"; 
 
     // Button Functionality
     btnExport.onClick = function() {
@@ -85,11 +133,12 @@ function createUI() {
       exportOptions = [
         {
             info: 'Cue',
-            shoudlExport: btnCue.value,
+            shouldExport: btnCue.value,
             generateInfo: function(layer) {
-                var getClosestCompMarker(layer, layer.inPoint)
+                var cue = getClosestCompMarker(layer, layer.inPoint);
+                return "," + cue.cueName;
             }
-        }
+        },
         { 
             info: 'Blend Mode', 
             shouldExport: btnBlendMode.value, 
@@ -101,8 +150,12 @@ function createUI() {
             info: 'In-Point (sec:frame)', 
             shouldExport: btnInPntSF.value, 
             generateInfo: function(layer) {
-                var inPointSecondsTruncate = (Math.floor(layer.inPoint));
-                var inPointFrames = layer.inPoint * layer.containingComp.frameRate;
+                var timing = 0;
+                if (layerTimingsRelative) {
+                    timing = layer.inPoint - getClosestCompMarker(layer,layer.inPoint).closestTime;
+                } else { timing = layer.inPoint };
+                var inPointSecondsTruncate = (Math.floor(timing));
+                var inPointFrames = timing * layer.containingComp.frameRate;
                 if (inPointFrames >= layer.containingComp.frameRate) {
                     var inPointFrames = Math.floor(inPointFrames % layer.containingComp.frameRate);
                 }
@@ -113,15 +166,24 @@ function createUI() {
             info: 'In-Point (sec)', 
             shouldExport: btnInPntS.value,
             generateInfo: function(layer) {
-            var inPointSeconds = (layer.inPoint).toFixed(2);
-            return "," + inPointSeconds;
+                var timing = 0;
+                if (layerTimingsRelative) {
+                    timing = layer.inPoint - getClosestCompMarker(layer,layer.inPoint).closestTime;
+                } else { timing = layer.inPoint };
+                var inPointSeconds = (timing).toFixed(2);
+                return "," + inPointSeconds;
             } 
         },
         { 
             info: 'In-Point (frame)',
             shouldExport: btnInPntF.value,
             generateInfo: function(layer) {
-                var inPointFrames = layer.inPoint * layer.containingComp.frameRate;
+                var timing = 0;
+                if (layerTimingsRelative) {
+                    timing = layer.inPoint - getClosestCompMarker(layer,layer.inPoint).closestTime;
+                } else { timing = layer.inPoint };
+                var inPointFrames = timing * layer.containingComp.frameRate;
+                inPointFrames = Math.round(inPointFrames);
                 return ","+ inPointFrames;
             }
         },
@@ -268,6 +330,7 @@ function getClosestCompMarker(layer, timeMark) {
     var markers = comp.markerProperty;
     var closestTime = comp.displayStartTime; // Default to start of the comp
     var closestMarker = null;
+    var cueName = "";
 
     if (markers.numKeys > 0) {
         var minDelta = Math.abs(timePoint - closestTime);
@@ -287,9 +350,15 @@ function getClosestCompMarker(layer, timeMark) {
             }
         }
     }
+
+    if (closestMarker == null) {
+        cueName = "Assembly Start"
+    } else {
+        cueName = closestMarker.comment;
+    }
     return { 
         closestTime: closestTime,
-        closestMarker: closestMarker
+        cueName: cueName
     };
 }
 
@@ -298,7 +367,6 @@ function main() {
     var activeComp = app.project.activeItem;
     if (activeComp && activeComp instanceof CompItem && activeComp.selectedLayers.length > 0) {
     exportLayerInfoToCSV(activeComp);
-    dialog.close();
     } else if (activeComp.selectedLayers.length == 0) {
     alert('Please select layers to export timing.');
     } else {
@@ -308,50 +376,3 @@ function main() {
 
 createUI();
 
-var blendingModes = {
-  "Luminescent Premul": 5245,
-  "Alpha Add": 5244,
-  "Silhouette Luma": 5243,
-  "Silhouette Alpha": 5242,
-  "Stencil Luma": 5241,
-  "Stencil Alpha": 5240,
-  "Luminosity": 5239,
-  "Color": 5238,
-  "Saturation": 5237,
-  "Hue": 5236,
-  "Divide": 5249,
-  "Subtract": 5248,
-  "Exclusion": 5235,
-  "Classic Difference": 5234,
-  "Difference": 5233,
-  "Hard Mix": 5232,
-  "Pin Light": 5231,
-  "Vivid Light": 5230,
-  "Linear Light": 5229,
-  "Hard Light": 5228,
-  "Soft Light": 5227,
-  "Overlay": 5226,
-  "Lighter Color": 5246,
-  "Linear Dodge": 5223,
-  "Classic Color Dodge": 5225,
-  "Color Dodge": 5224,
-  "Screen": 5222,
-  "Lighten": 5221,
-  "Add": 5220,
-  "Darker Color": 5247,
-  "Linear Burn": 5217,
-  "Classic Color Burn": 5219,
-  "Color Burn": 5218,
-  "Multiply": 5216,
-  "Darken": 5215,
-  "Dancing Dissolve": 5214,
-  "Dissolve": 5213,
-  "Normal": 5212
-};
-
-var trackMattes = {
-  "ALPHA": TrackMatteType.ALPHA,
-  "ALPHA INVERT": TrackMatteType.ALPHA_INVERTED,
-  "LUMA": TrackMatteType.LUMA,
-  "LUMA INVERT": TrackMatteType.LUMA_INVERTED
-};

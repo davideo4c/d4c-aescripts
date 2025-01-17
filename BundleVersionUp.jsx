@@ -4,6 +4,7 @@
 	DAVID4C.COM
 	BASED OFF INITIAL CODE FROM THE GUY WHO RUNS CRGREEN.COM
 **/
+
 var versionPattern = /_[v|V]\d*/;
 var mySelection = app.project.selection;
 if ( mySelection.length == 0 ) {
