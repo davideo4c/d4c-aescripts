@@ -136,7 +136,7 @@ function createUI() {
             shouldExport: btnCue.value,
             generateInfo: function(layer) {
                 var cue = getClosestCompMarker(layer, layer.inPoint);
-                return "," + cue.cueName;
+                return ',"' + cue.cueName + '"';
             }
         },
         { 
