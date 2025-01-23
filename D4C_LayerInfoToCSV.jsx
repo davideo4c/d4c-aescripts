@@ -88,12 +88,15 @@ function createUI() {
 
     var btnCue = checkboxes.add("checkbox", undefined, undefined, {name:'btnCue'});
         btnCue.text = "Cue (Comp Markers)";
+        btnCue.value = true;
 
     var btnBlendMode = checkboxes.add("checkbox", undefined, undefined, {name: "btnBlendMode"}); 
         btnBlendMode.text = "Blend Mode"; 
+        btnBlendMode.value = true;
 
     var btnInPntSF = checkboxes.add("checkbox", undefined, undefined, {name: "btnInPntSF"}); 
         btnInPntSF.text = "In-Point (s:f)"; 
+        btnInPntSF.value = true;
 
     var btnInPntS = checkboxes.add("checkbox", undefined, undefined, {name: "btnInPntS"}); 
         btnInPntS.text = "In-Point (s)"; 
@@ -103,9 +106,11 @@ function createUI() {
         
     var btnComment = checkboxes.add("checkbox", undefined, undefined, {name: "btnComment"}); 
         btnComment.text = "Comments";
+        btnComment.value = true;
 
     var btnTrackMattes = checkboxes.add("checkbox", undefined, undefined, {name: "btnTrackMattes"}); 
         btnTrackMattes.text = "Track Mattes";
+        btnTrackMattes.value = true;
         
     var btnFadeInTime = checkboxes.add("checkbox", undefined, undefined, {name: "btnFadeInTime"});
         btnFadeInTime.text = "Fade In Length";
@@ -113,6 +118,12 @@ function createUI() {
     var btnFadeOutTime = checkboxes.add("checkbox", undefined, undefined, {name: "btnFadeOutTime"});
       btnFadeOutTime.text = "Fade Out Length";
 
+    var btnSourceIn = checkboxes.add("checkbox", undefined, undefined, {name:"btnSourceIn"});
+        btnSourceIn.text = "Source In (TC)";
+
+    var btnSourceOut = checkboxes.add("checkbox", undefined, undefined, {name:"btnSourceOut"});
+        btnSourceOut.text = "Source Out (TC)";
+        
     // FUNCTION BUTTONS
     // ============
     var functionBtns = dialog.add("group", undefined, {name: "functionBtns"}); 
@@ -129,7 +140,7 @@ function createUI() {
 
     // Button Functionality
     btnExport.onClick = function() {
-        layerTimingsRelative = compRelativeTiming.value;
+    layerTimingsRelative = compRelativeTiming.value;
       exportOptions = [
         {
             info: 'Cue',
@@ -256,7 +267,26 @@ function createUI() {
                     return ",,,";
                 }
             }
-    }
+            
+        },
+        { 
+            info: 'Source In (TC)', 
+            shouldExport: btnSourceIn.value,
+            generateInfo: function(layer) {
+                var frameRate = layer.containingComp.frameRate;
+                var sourceIn = layer.inPoint - layer.startTime;  // In-point relative to source
+                return "," + timeToCurrentFormat(sourceIn, frameRate);
+            } 
+        },
+        { 
+            info: 'Source Out (TC)', 
+            shouldExport: btnSourceOut.value,
+            generateInfo: function(layer) {
+                var frameRate = layer.containingComp.frameRate;
+                var sourceOut = layer.outPoint - layer.startTime;  // Out-point relative to source
+                return "," + timeToCurrentFormat(sourceOut, frameRate);
+            } 
+        }
       ];
       main();
     }
@@ -281,7 +311,9 @@ function exportLayerInfoToCSV(comp) {
   var saveFile = File.saveDialog("Save Layer Times CSV", "*.csv");
   
   if (saveFile) {
+    // OPEN NEW CSV FILE
     saveFile.open("w");
+    // WRITE THE HEADER LINES BASED OFF WHAT EXPORT OPTIONS ARE SELECTED
     headerLine = "Layer Name"
     for (i = 0; i < exportOptions.length; i++) {
       if (exportOptions[i].shouldExport) {
@@ -291,19 +323,32 @@ function exportLayerInfoToCSV(comp) {
     saveFile.writeln(headerLine);
     // Loop through the layers and write their information to the CSV
     var selectedLayers = comp.selectedLayers;
+    var compLayers = comp.layers;
     var exportCount = 0;
-    for (var i = 0; i < selectedLayers.length; i++) {
-      var layer = selectedLayers[i];
-      var layerName = '"' + layer.name + '"';
-      // Exclude Shy and Guides
-      if (layer && !layer.shy && !layer.guideLayer) {
-        // alert("Found layer " + layerName +", exporting.")     
-        saveFile.writeln(layerName + makeLayerInfo(layer))
-        exportCount++;
-      }
+    if (selectedLayers != 0) {
+        for (var i = 0; i < selectedLayers.length; i++) {
+            var layer = selectedLayers[i];
+            var layerName = '"' + layer.name + '"';
+            // Exclude Shy and Guides
+            if (layer && !layer.shy && !layer.guideLayer) {
+              // alert("Found layer " + layerName +", exporting.")     
+              saveFile.writeln(layerName + makeLayerInfo(layer))
+              exportCount++;
+            }
+          }
+    } else {
+        for (var i = 1; i <= compLayers.length; i ++) {
+            var layer = compLayers(i);
+            var layerName = '"' + layer.name + '"';
+            // Exclude Shy and Guides
+            if (layer && !layer.shy && !layer.guideLayer) {
+              // alert("Found layer " + layerName +", exporting.")     
+              saveFile.writeln(layerName + makeLayerInfo(layer))
+              exportCount++; 
+            }
+        }
     }
     saveFile.close();
-    // dialog.close();
     alert(exportCount + " layer timings exported to " + saveFile.fsName);
   } else { alert('Could not write CSV. Check that under Settings > Scripting & Expressions, Allow Scripts to Read and Write Files is checked.');}
 }
@@ -362,15 +407,60 @@ function getClosestCompMarker(layer, timeMark) {
     };
 }
 
+function formatTimecode(seconds, frameRate) {
+    var isDropFrame = Math.abs(frameRate - 29.97) < 0.01; // Check if it's 29.97 fps
+    var framesPerHour = Math.round(frameRate * 3600);
+    var framesPerMinute = Math.round(frameRate * 60);
+    var totalFrames = Math.round(seconds * frameRate);
+
+    var dropFrames = 0;
+    if (isDropFrame) {
+        dropFrames = Math.round(frameRate * 0.066666); // 2 frames per minute
+    }
+
+    // Drop-frame adjustment
+    if (isDropFrame) {
+        var totalMinutes = Math.floor(totalFrames / framesPerMinute); // Total elapsed minutes
+        var droppedFrames =
+            dropFrames * (totalMinutes - Math.floor(totalMinutes / 10)); // Account for non-dropped 10th minutes
+        totalFrames += droppedFrames;
+    }
+
+    // Calculate hours, minutes, seconds, and frames
+    var hours = Math.floor(totalFrames / framesPerHour);
+    totalFrames %= framesPerHour;
+
+    var minutes = Math.floor(totalFrames / framesPerMinute);
+    totalFrames %= framesPerMinute;
+
+    var seconds = Math.floor(totalFrames / frameRate);
+    var frames = Math.round(totalFrames % frameRate);
+
+    // Format as HH:MM:SS:FF
+    var timecode = [
+        ("0" + hours).slice(-2),
+        ("0" + minutes).slice(-2),
+        ("0" + seconds).slice(-2),
+        ("0" + frames).slice(-2),
+    ].join(":");
+
+    return timecode;
+}
+
 function main() {
     // Primary function
+    var projectSelection = app.project.selection;
     var activeComp = app.project.activeItem;
-    if (activeComp && activeComp instanceof CompItem && activeComp.selectedLayers.length > 0) {
-    exportLayerInfoToCSV(activeComp);
-    } else if (activeComp.selectedLayers.length == 0) {
-    alert('Please select layers to export timing.');
+    if (projectSelection && projectSelection > 1) {
+        for (i = 0; i < projectSelection.length; i++) {
+            if (projectSelection[i] instanceof CompItem) {
+                exportLayerInfoToCSV(activeComp);
+            }
+        }
+    } else if (activeComp && activeComp instanceof CompItem) {
+        exportLayerInfoToCSV(activeComp);
     } else {
-    alert("Please select or open a composition first.");
+        alert("Please select or open a composition first.");
     }
 }
 
